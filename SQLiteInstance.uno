@@ -13,7 +13,7 @@ class SQLiteInstance
     static object _instance;
     static string _dbFileName;
 
-    static Dictionary<string, string> _queries = new Dictionary<string, string>();
+    static List<string> _queries = new List<string>();
     static Dictionary<string, List<SQLQueryExpression>> _expressions = new Dictionary<string, List<SQLQueryExpression>>();
 
     static public void Initialize(string file)
@@ -47,20 +47,36 @@ class SQLiteInstance
     {
         lock (_sqliteGlobalLock)
         {
-            _queries[name] = sql;
+            if (!_queries.Contains(sql))
+            {
+                _queries.Add(sql);
+            }
         }
     }
 
-    static public void RegisterQueryExpression(string queryName, SQLQueryExpression expr)
+    static public void RegisterTable(Table.Description table)
+    {
+        debug_log "Got a table: " + table;
+        // var cols = new List<string>();
+        // foreach (var col in table.Elements)
+        // {
+        //     cols.Add("`" + col.Name + "` TEXT");
+        // }
+        // var query = "CREATE TABLE `" + table.Name + "` (" + string.Join(", ", cols.ToArray()) + ")";
+        // debug_log "query: " + query;
+    }
+
+    static public void RegisterQueryExpression(Query query, SQLQueryExpression expr)
     {
         lock (_sqliteGlobalLock)
         {
-            if (!_expressions.ContainsKey(queryName))
+            var queryID = query.SQL;
+            if (!_expressions.ContainsKey(queryID))
             {
-                _expressions[queryName] = new List<SQLQueryExpression>();
+                _expressions[queryID] = new List<SQLQueryExpression>();
             }
 
-            var exprs = _expressions[queryName];
+            var exprs = _expressions[queryID];
             if (!exprs.Contains(expr))
             {
                 exprs.Add(expr);

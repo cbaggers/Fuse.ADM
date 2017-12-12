@@ -1,6 +1,6 @@
 <App>
     <DB ux:Name="hoo" File="TestData">
-        <Table ux:Name="testTable">
+        <Table Name="testTable">
             <Column Name="a" />
             <Column Name="b" />
             <Column Name="c" />

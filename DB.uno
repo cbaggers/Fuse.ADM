@@ -9,17 +9,24 @@ using Fuse.Reactive;
 
 class DB : Behavior
 {
-    public abstract class SQLElement : Behavior {}
+    public abstract class SQLElement {}
 
     public string File { get; set; }
 
-    RootableList<SQLElement> _elements;
+    RootableList<SQLElement> _elements = new RootableList<SQLElement>();
 
     protected override void OnRooted()
     {
-        debug_log "DB rooted";
         base.OnRooted();
+        debug_log "DB rooted";
         SQLiteInstance.Initialize(File);
+        _elements.RootSubscribe(OnElementAdded, OnElementRemoved);
+    }
+
+    protected override void OnUnrooted()
+    {
+        base.OnUnrooted();
+        _elements.RootUnsubscribe();
     }
 
     [UXContent]
@@ -27,18 +34,13 @@ class DB : Behavior
     {
         get
         {
-            if (_elements == null)
-            {
-                _elements = new RootableList<SQLElement>();
-                if (IsRootingCompleted)
-                    _elements.Subscribe(OnElementAdded, OnElementRemoved);
-            }
             return _elements;
         }
     }
 
     void OnElementAdded(SQLElement elem)
     {
+        debug_log "sup " + elem;
         if (elem is Table)
         {
             OnTable((Table)elem);
@@ -63,6 +65,8 @@ class DB : Behavior
 
     void OnTable(Table table)
     {
+        SQLiteInstance.RegisterTable(table.Describe());
+
     }
 
     void OnQuery(Query table)

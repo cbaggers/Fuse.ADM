@@ -18,7 +18,9 @@ public class SQLQueryExpression : SimpleVarArgFunction
 
         if (queryElem!=null)
         {
-            SQLiteInstance.RegisterQueryExpression(queryElem.Name, this);
+            debug_log "RegisterQueryExpression " + queryElem;
+            var name = "arse";
+            SQLiteInstance.RegisterQueryExpression(queryElem, this);
         }
 
         _listener = listener;

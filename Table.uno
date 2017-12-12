@@ -9,6 +9,8 @@ using Fuse.Reactive;
 
 class Table : DB.SQLElement
 {
+    public string Name { get; set; }
+
     RootableList<Column> _elements = new RootableList<Column>();
 
     [UXContent]
@@ -16,42 +18,40 @@ class Table : DB.SQLElement
     {
         get
         {
-            debug_log "Here we are!";
             return _elements;
         }
     }
 
-    protected override void OnRooted()
+    public Description Describe()
     {
-        debug_log "hi " + _elements.Count;
-        base.OnRooted();
-        _elements.RootSubscribe(OnColumnAdded, OnColumnRemoved);
+        var cols = new List<Column.Description>(Elements.Count);
+        for (var i = 0; i < cols.Count; i++)
+        {
+            cols[i] = Elements[i].Describe();
+        }
+        return new Description { Name=Name, Columns=cols };
     }
 
-    protected override void OnUnrooted()
+    public struct Description
     {
-        _elements.RootUnsubscribe();
-        base.OnUnrooted();
-    }
-
-    void OnColumnAdded(Column elem)
-    {
-        debug_log "row added";
-        UpdateTable();
-    }
-
-    void OnColumnRemoved(Column elem)
-    {
-        debug_log "row removed";
-        UpdateTable();
-    }
-
-    void UpdateTable()
-    {
+        public string Name;
+        public List<Column.Description> Columns;
     }
 }
 
 class Column : Behavior
 {
-    // public string Name { get; set; }
+    public string Name { get; set; }
+    public string Type { get; set; }
+
+    public Description Describe()
+    {
+        return new Description { Name=Name, Type=Type };
+    }
+
+    public struct Description
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+    }
 }
