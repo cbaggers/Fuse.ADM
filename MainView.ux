@@ -10,9 +10,13 @@
     <DockPanel>
         <TopFrameBackground Dock="Top" />
         <StackPanel>
-            <Button Text="Nope" />
-            <Button Text="Nope" />
-            <Button Text="yup" />
+            <Button Text="Before" />
+            <Each Items="query(getItems)">
+                <Button Text="Nope" />
+                <Button Text="Nope" />
+                <Button Text="yup" />
+            </Each>
+            <Button Text="After" />
         </StackPanel>
         <BottomBarBackground Dock="Bottom" />    </DockPanel>
 </App>

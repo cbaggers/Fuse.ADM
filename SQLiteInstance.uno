@@ -17,6 +17,7 @@ class SQLiteInstance
 
     static public void EnsureInitialized()
     {
+        debug_log "in EnsureInitialized";
         if (_instance!=null) return;
 
         lock (_sqliteGlobalLock)
@@ -28,6 +29,7 @@ class SQLiteInstance
 
     static object MakeInstance()
     {
+        debug_log "in MakeInstance";
         return new SQLThread();
     }
 
@@ -36,10 +38,6 @@ class SQLiteInstance
         lock (_sqliteGlobalLock)
         {
             _queries[name] = sql;
-            if (!_expressions.ContainsKey(name))
-            {
-                _expressions[name] = new List<SQLQueryExpression>();
-            }
         }
     }
 
@@ -47,10 +45,18 @@ class SQLiteInstance
     {
         EnsureInitialized();
 
-        var exprs = _expressions[queryName];
-        if (!exprs.Contains(expr))
+        lock (_sqliteGlobalLock)
         {
-            exprs.Add(expr);
+            if (!_expressions.ContainsKey(queryName))
+            {
+                _expressions[queryName] = new List<SQLQueryExpression>();
+            }
+
+            var exprs = _expressions[queryName];
+            if (!exprs.Contains(expr))
+            {
+                exprs.Add(expr);
+            }
         }
     }
 
@@ -61,10 +67,21 @@ class SQLiteInstance
         public SQLThread()
         {
             _thread = new Thread(SQLMainLoop);
+            if defined(DotNet)
+            {
+                // TODO: Create a method for canceling the thread safely
+                // Threads are by default foreground threads
+                // Foreground threads prevents the owner process from exiting, before the thread is safely closed
+                // This is a workaround by setting the thread to be a background thread.
+                _thread.IsBackground = true;
+            }
+
+            _thread.Start();
         }
 
         void SQLMainLoop()
         {
+            debug_log "in SQLMainLoop";
             while (true)
             {
                 // weeee

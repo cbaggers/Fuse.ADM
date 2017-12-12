@@ -10,4 +10,10 @@ using Fuse.Reactive;
 class Query : DB.SQLElement
 {
     public string SQL { get; set; }
+
+    protected override void OnRooted()
+    {
+        base.OnRooted();
+        SQLiteInstance.RegisterQuery(Name, SQL);
+    }
 }
