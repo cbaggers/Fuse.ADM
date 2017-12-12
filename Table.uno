@@ -9,21 +9,29 @@ using Fuse.Reactive;
 
 class Table : DB.SQLElement
 {
-    RootableList<Column> _elements;
+    RootableList<Column> _elements = new RootableList<Column>();
 
     [UXContent]
     public IList<Column> Elements
     {
         get
         {
-            if (_elements == null)
-            {
-                _elements = new RootableList<Column>();
-                if (IsRootingCompleted)
-                    _elements.Subscribe(OnColumnAdded, OnColumnRemoved);
-            }
+            debug_log "Here we are!";
             return _elements;
         }
+    }
+
+    protected override void OnRooted()
+    {
+        debug_log "hi " + _elements.Count;
+        base.OnRooted();
+        _elements.RootSubscribe(OnColumnAdded, OnColumnRemoved);
+    }
+
+    protected override void OnUnrooted()
+    {
+        _elements.RootUnsubscribe();
+        base.OnUnrooted();
     }
 
     void OnColumnAdded(Column elem)

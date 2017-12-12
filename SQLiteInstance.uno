@@ -95,7 +95,10 @@ class SQLiteInstance
             debug_log "start the main sql loop";
             while (true)
             {
-                // weeee
+                lock (_sqliteGlobalLock)
+                {
+                    // time to do shit
+                }
             }
         }
     }

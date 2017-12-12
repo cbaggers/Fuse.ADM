@@ -17,6 +17,7 @@ class DB : Behavior
 
     protected override void OnRooted()
     {
+        debug_log "DB rooted";
         base.OnRooted();
         SQLiteInstance.Initialize(File);
     }

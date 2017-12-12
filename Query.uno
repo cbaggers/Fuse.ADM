@@ -13,6 +13,7 @@ class Query : DB.SQLElement
 
     protected override void OnRooted()
     {
+        debug_log "Query OnRooted";
         base.OnRooted();
         SQLiteInstance.RegisterQuery(Name, SQL);
     }
