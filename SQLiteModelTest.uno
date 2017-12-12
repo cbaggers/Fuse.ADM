@@ -26,11 +26,43 @@ class DB : Behavior
         }
     }
 
-    void OnElementAdded(IDBElement c)
+    void OnElementAdded(IDBElement elem)
+    {
+        if (elem is Table)
+        {
+            OnTable((Table)elem);
+        }
+        else
+        {
+            OnQuery((Query)elem);
+        }
+    }
+
+    void OnElementRemoved(IDBElement elem)
+    {
+        if (elem is Table)
+        {
+            OnTableRemoved((Table)elem);
+        }
+        else
+        {
+            OnQueryRemoved((Query)elem);
+        }
+    }
+
+    void OnTable(Table table)
     {
     }
 
-    void OnElementRemoved(IDBElement c)
+    void OnQuery(Query table)
+    {
+    }
+
+    void OnTableRemoved(Table table)
+    {
+    }
+
+    void OnQueryRemoved(Query table)
     {
     }
 }
