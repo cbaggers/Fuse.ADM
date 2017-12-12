@@ -71,6 +71,30 @@ abstract class IDBElement : Behavior {}
 
 class Table : IDBElement
 {
+    RootableList<Row> _elements;
+
+    [UXContent]
+    public IList<Row> Elements
+    {
+        get
+        {
+            if (_elements == null)
+            {
+                _elements = new RootableList<Row>();
+                if (IsRootingCompleted)
+                    _elements.Subscribe(OnRowAdded, OnRowRemoved);
+            }
+            return _elements;
+        }
+    }
+
+    void OnRowAdded(Row elem)
+    {
+    }
+
+    void OnRowRemoved(Row elem)
+    {
+    }
 }
 
 class Query : IDBElement
