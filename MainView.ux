@@ -1,4 +1,12 @@
 <App>
+    <DB ux:Name="hoo">
+        <Table ux:Name="testTable">
+            <!-- <Row Name="a" /> -->
+            <!-- <Row Name="b" /> -->
+            <!-- <Row Name="c" /> -->
+        </Table>
+        <Query ux:Name="getItems" SQL="SELECT From frist WHERE b='?'" />
+    </DB>
     <DockPanel>
         <TopFrameBackground Dock="Top" />
         <StackPanel>
@@ -6,6 +14,5 @@
             <Button Text="Nope" />
             <Button Text="yup" />
         </StackPanel>
-        <BottomBarBackground Dock="Bottom" />
-    </DockPanel>
+        <BottomBarBackground Dock="Bottom" />    </DockPanel>
 </App>

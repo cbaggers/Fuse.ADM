@@ -4,11 +4,50 @@ using Uno.Threading;
 using Uno.Collections;
 using Uno.Compiler.ExportTargetInterop;
 
+using Fuse;
 using Fuse.Reactive;
 
-class Test
+class DB : Behavior
 {
+    RootableList<IDBElement> _elements;
 
+    [UXContent]
+    public IList<IDBElement> Elements
+    {
+        get
+        {
+            if (_elements == null)
+            {
+                _elements = new RootableList<IDBElement>();
+                if (IsRootingCompleted)
+                    _elements.Subscribe(OnElementAdded, OnElementRemoved);
+            }
+            return _elements;
+        }
+    }
+
+    void OnElementAdded(IDBElement c)
+    {
+    }
+
+    void OnElementRemoved(IDBElement c)
+    {
+    }
+}
+
+abstract class IDBElement : Behavior {}
+
+class Table : IDBElement
+{
+}
+
+class Query : IDBElement
+{
+    public string SQL { get; set; }
+}
+
+class Row : Behavior
+{
 }
 
 
