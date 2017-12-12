@@ -1,9 +1,13 @@
 {
-    "Packages": [
-        "Fuse",
-        "FuseJS",
-    ],
-    "Includes": [
-        "*"
-    ]
+  "Packages": [
+    "Fuse",
+    "FuseJS",
+  ],
+  "Projects": [
+    "/Users/Baggers/Code/fuse-sqlite/sqlite_include.unoproj"
+  ],
+  "Includes": [
+    "TestData.db:Bundle",
+    "*"
+  ]
 }

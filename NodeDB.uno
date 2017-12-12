@@ -11,7 +11,15 @@ class DB : Behavior
 {
     public abstract class SQLElement : Behavior {}
 
+    public string File { get; set; }
+
     RootableList<SQLElement> _elements;
+
+    protected override void OnRooted()
+    {
+        base.OnRooted();
+        SQLiteInstance.Initialize(File);
+    }
 
     [UXContent]
     public IList<SQLElement> Elements

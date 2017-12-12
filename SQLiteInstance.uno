@@ -11,19 +11,29 @@ class SQLiteInstance
 {
     static object _sqliteGlobalLock = new object();
     static object _instance;
+    static string _dbFileName;
 
     static Dictionary<string, string> _queries = new Dictionary<string, string>();
     static Dictionary<string, List<SQLQueryExpression>> _expressions = new Dictionary<string, List<SQLQueryExpression>>();
 
-    static public void EnsureInitialized()
+    static public void Initialize(string file)
     {
-        debug_log "in EnsureInitialized";
-        if (_instance!=null) return;
-
         lock (_sqliteGlobalLock)
         {
             if (_instance!=null) return;
+            _dbFileName = file;
             _instance = MakeInstance();
+        }
+    }
+
+    bool IsInitialized
+    {
+        get
+        {
+            lock (_sqliteGlobalLock)
+            {
+                return _instance == null;
+            }
         }
     }
 
@@ -43,8 +53,6 @@ class SQLiteInstance
 
     static public void RegisterQueryExpression(string queryName, SQLQueryExpression expr)
     {
-        EnsureInitialized();
-
         lock (_sqliteGlobalLock)
         {
             if (!_expressions.ContainsKey(queryName))
@@ -82,6 +90,9 @@ class SQLiteInstance
         void SQLMainLoop()
         {
             debug_log "in SQLMainLoop";
+            SQLiteDb.Open(_dbFileName);
+            debug_log "db open: " + _dbFileName;
+            debug_log "start the main sql loop";
             while (true)
             {
                 // weeee
