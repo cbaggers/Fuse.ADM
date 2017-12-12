@@ -7,7 +7,7 @@ using Uno.Compiler.ExportTargetInterop;
 using Fuse;
 using Fuse.Reactive;
 
-class Query : IDBElement
+class Query : DB.SQLElement
 {
     public string SQL { get; set; }
 }

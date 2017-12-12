@@ -9,18 +9,18 @@ using Fuse.Reactive;
 
 class DB : Behavior
 {
-    abstract class IDBElement : Behavior {}
+    public abstract class SQLElement : Behavior {}
 
-    RootableList<IDBElement> _elements;
+    RootableList<SQLElement> _elements;
 
     [UXContent]
-    public IList<IDBElement> Elements
+    public IList<SQLElement> Elements
     {
         get
         {
             if (_elements == null)
             {
-                _elements = new RootableList<IDBElement>();
+                _elements = new RootableList<SQLElement>();
                 if (IsRootingCompleted)
                     _elements.Subscribe(OnElementAdded, OnElementRemoved);
             }
@@ -28,7 +28,7 @@ class DB : Behavior
         }
     }
 
-    void OnElementAdded(IDBElement elem)
+    void OnElementAdded(SQLElement elem)
     {
         if (elem is Table)
         {
@@ -40,7 +40,7 @@ class DB : Behavior
         }
     }
 
-    void OnElementRemoved(IDBElement elem)
+    void OnElementRemoved(SQLElement elem)
     {
         if (elem is Table)
         {

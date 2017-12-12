@@ -1,9 +1,9 @@
 <App>
     <DB ux:Name="hoo">
         <Table ux:Name="testTable">
-            <Row Name="a" />
-            <Row Name="b" />
-            <Row Name="c" />
+            <Column Name="a" />
+            <Column Name="b" />
+            <Column Name="c" />
         </Table>
         <Query ux:Name="getItems" SQL="SELECT From frist WHERE b='?'" />
     </DB>
