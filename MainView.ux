@@ -1,0 +1,11 @@
+<App>
+    <DockPanel>
+        <TopFrameBackground Dock="Top" />
+        <StackPanel>
+            <Button Text="Nope" />
+            <Button Text="Nope" />
+            <Button Text="yup" />
+        </StackPanel>
+        <BottomBarBackground Dock="Bottom" />
+    </DockPanel>
+</App>
