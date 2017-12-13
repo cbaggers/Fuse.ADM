@@ -7,7 +7,7 @@
             <Column Name="d" />
         </Table>
         <Query ux:Name="getItems" SQL="SELECT * From testTable" />
-        <!-- <Query ux:Name="getItems" SQL="SELECT From frist WHERE b='?'" /> -->
+        <Query ux:Name="secondTest" SQL="SELECT * From testTable WHERE b=?" />
     </DB>
     <DockPanel>
         <TopFrameBackground Dock="Top" />
@@ -15,6 +15,9 @@
             <Button Text="Before" />
             <Each Items="query(getItems)">
                 <Button Text="OOOoo >{a}<" />
+            </Each>
+            <Each Items="query(secondTest, 'boogle')">
+                <Button Text="params work :) >{a}<" />
             </Each>
             <Button Text="After" />
         </StackPanel>

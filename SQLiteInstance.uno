@@ -196,6 +196,7 @@ class SQLiteInstance
             _db = SQLiteDb.Open(_dbFileName);
             debug_log "db open: " + _dbFileName;
             debug_log "start the main sql loop";
+
             while (true)
             {
                 lock (_sqliteGlobalLock)
@@ -213,19 +214,22 @@ class SQLiteInstance
                         debug_log "{TODO} we just swallowed an error: " + e.Message;
                     }
 
-                    foreach (var query in _queries)
+                    foreach (var query in _expressions.Keys)
                     {
-                        if (!_expressions.ContainsKey(query)) continue;
-
+                        if (!_queries.Contains(query)) continue;
                         var recipients = _expressions[query];
                         if (recipients.Count == 0) continue;
 
                         try
                         {
-                            var res = new QueryResult(_db.Query(query, new string[0]));
                             var i = 0;
                             foreach (var recip in recipients)
                             {
+                                QueryResult res = QueryResult.NULL;
+                                lock (recip.ParamLock)
+                                {
+                                    res = new QueryResult(_db.Query(query, recip.QueryParams));
+                                }
                                 debug_log "sending: " + res + " to " + recip + " (" + i + ")" ;
                                 recip.DispatchQueryResult(res);
                                 i++;

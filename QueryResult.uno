@@ -12,6 +12,11 @@ public class QueryResult: IArray
 {
     List<QueryResultRow> _items;
 
+    public QueryResult()
+    {
+        _items = new List<QueryResultRow>();
+    }
+
     public QueryResult(List<QueryResultRow> data)
     {
         _items = data;
@@ -20,9 +25,12 @@ public class QueryResult: IArray
     public QueryResult(List<Dictionary<string, string>> data)
     {
         List<QueryResultRow> rows = new List<QueryResultRow>();
-        foreach (var row in data)
+        if (data != null)
         {
-            rows.Add(new QueryResultRow(row));
+            foreach (var row in data)
+            {
+                rows.Add(new QueryResultRow(row));
+            }
         }
         _items = rows;
     }
@@ -43,6 +51,8 @@ public class QueryResult: IArray
         sb.Append(")");
         return sb.ToString();
     }
+
+    public static readonly QueryResult NULL = new QueryResult();
 }
 
 public class QueryResultRow : IObject

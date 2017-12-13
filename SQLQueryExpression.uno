@@ -12,11 +12,26 @@ using Fuse.Reactive;
 public class SQLQueryExpression : SimpleVarArgFunction
 {
     IListener _listener;
+    public readonly object ParamLock = new object();
+    public string[] QueryParams = new string[0];
 
     protected override void OnNewArguments(Argument[] args, IListener listener)
     {
-        var queryElem = args[0].Value as Query;
+        lock (ParamLock)
+        {
+            var queryParams = new List<string>();
 
+            if (args.Length > 1)
+            {
+                for (var i = 1; i<args.Length; i++)
+                {
+                    queryParams.Add(args[i].HasValue ? args[i].Value.ToString() : "null");
+                }
+            }
+            QueryParams = queryParams.ToArray();
+        }
+
+        var queryElem = args[0].Value as Query;
         if (queryElem!=null)
         {
             SQLiteInstance.RegisterQueryExpression(queryElem, this);
