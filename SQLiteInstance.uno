@@ -10,7 +10,7 @@ using Fuse.Reactive;
 class SQLiteInstance
 {
     static object _sqliteGlobalLock = new object();
-    static object _instance;
+    static SQLThread _thread;
     static string _dbFileName;
 
     static List<string> _queries = new List<string>();
@@ -20,9 +20,10 @@ class SQLiteInstance
     {
         lock (_sqliteGlobalLock)
         {
-            if (_instance!=null) return;
+            if (_thread!=null) return;
             _dbFileName = file;
-            _instance = MakeInstance();
+            debug_log "MakeInstance";
+            _thread = new SQLThread();
         }
     }
 
@@ -32,15 +33,9 @@ class SQLiteInstance
         {
             lock (_sqliteGlobalLock)
             {
-                return _instance == null;
+                return _thread != null;
             }
         }
-    }
-
-    static object MakeInstance()
-    {
-        debug_log "in MakeInstance";
-        return new SQLThread();
     }
 
     static public void RegisterQuery(string name, string sql)
@@ -57,13 +52,7 @@ class SQLiteInstance
     static public void RegisterTable(Table.Description table)
     {
         debug_log "Got a table: " + table;
-        // var cols = new List<string>();
-        // foreach (var col in table.Elements)
-        // {
-        //     cols.Add("`" + col.Name + "` TEXT");
-        // }
-        // var query = "CREATE TABLE `" + table.Name + "` (" + string.Join(", ", cols.ToArray()) + ")";
-        // debug_log "query: " + query;
+        _thread.Invoke(new CreateTable(table).Run);
     }
 
     static public void RegisterQueryExpression(Query query, SQLQueryExpression expr)
@@ -84,9 +73,108 @@ class SQLiteInstance
         }
     }
 
+    class CreateTable
+    {
+        Table.Description _table;
+
+        public CreateTable(Table.Description table)
+        {
+            _table = table;
+        }
+
+        public void Run(SQLiteDb db)
+        {
+            var info = TableInfo(db);
+            if (info.Count>0)
+            {
+                Alter(db, info);
+            }
+            else
+            {
+                Create(db);
+            }
+        }
+
+        Dictionary<string, string> TableInfo(SQLiteDb db)
+        {
+            var query = "PRAGMA table_info(" + _table.Name + ")";
+            var res = db.Query(query, new string[0]);
+            var info = new Dictionary<string, string>();
+            foreach (var col in res)
+            {
+                info[col["name"]] = col["type"];
+            }
+            return info;
+        }
+
+        void Create(SQLiteDb db)
+        {
+            var cols = new List<string>();
+            foreach (var col in _table.Columns)
+            {
+                cols.Add("`" + col.Name + "` TEXT");
+            }
+            var query = "CREATE TABLE `" + _table.Name + "` (" + string.Join(", ", cols.ToArray()) + ");";
+            db.Execute(query, new string[0]);
+        }
+
+        void Alter(SQLiteDb db, Dictionary<string, string> info)
+        {
+            // search for additions and modifications
+            // remove what we have handled
+            foreach (var col in _table.Columns)
+            {
+                if (info.ContainsKey(col.Name))
+                {
+                    if (info[col.Name] != col.Type)
+                    {
+                        debug_log "col Name=" + col.Name + " Type=" + col.Type;
+                        debug_log "info Name=" + col.Name + " Type=" + info[col.Name];
+                        ModifyColumn(db);
+                    }
+                    else
+                    {
+                        debug_log "Skipped Col";
+                    }
+                    info.Remove(col.Name);
+                }
+                else
+                {
+                    AddColumn(db, col);
+                }
+                // cols.Add("`" + col.Name + "` TEXT");
+            }
+            // whatever remains are removals
+            foreach (var col in info)
+            {
+                RemoveColumn(db); //col["name"]);
+            }
+        }
+
+        void AddColumn(SQLiteDb db, Column.Description col)
+        {
+            debug_log "ADD COLUMN!";
+            var query = "ALTER TABLE " + _table.Name + " ADD " + col.Name + " " + col.Type;
+            db.Execute(query, new string[0]);
+
+        }
+
+        void RemoveColumn(SQLiteDb db)
+        {
+            debug_log "TODO: RemoveColumn";
+        }
+        void ModifyColumn(SQLiteDb db)
+        {
+            debug_log "TODO: ModifyColumn";
+        }
+    }
+
+
     class SQLThread
     {
+        readonly ConcurrentQueue<Action<SQLiteDb>> _queue = new ConcurrentQueue<Action<SQLiteDb>>();
         Thread _thread;
+        SQLiteDb _db;
 
         public SQLThread()
         {
@@ -106,16 +194,32 @@ class SQLiteInstance
         void SQLMainLoop()
         {
             debug_log "in SQLMainLoop";
-            SQLiteDb.Open(_dbFileName);
+            _db = SQLiteDb.Open(_dbFileName);
             debug_log "db open: " + _dbFileName;
             debug_log "start the main sql loop";
             while (true)
             {
                 lock (_sqliteGlobalLock)
                 {
-                    // time to do shit
+                    try
+                    {
+                        Action<SQLiteDb> action;
+                        if (_queue.TryDequeue(out action))
+                        {
+                            action(_db);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        debug_log "{TODO} we just swallowed an error: " + e.Message;
+                    }
                 }
             }
+        }
+
+        public void Invoke(Action<SQLiteDb> action)
+        {
+            _queue.Enqueue(action);
         }
     }
 }

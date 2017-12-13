@@ -1,9 +1,10 @@
 <App>
-    <DB ux:Name="hoo" File="TestData">
+    <DB ux:Name="hoo" File="WOOOO">
         <Table Name="testTable">
             <Column Name="a" />
             <Column Name="b" />
             <Column Name="c" />
+            <Column Name="d" />
         </Table>
         <Query ux:Name="getItems" SQL="SELECT From frist WHERE b='?'" />
     </DB>

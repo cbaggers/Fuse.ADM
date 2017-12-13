@@ -24,10 +24,11 @@ class Table : DB.SQLElement
 
     public Description Describe()
     {
-        var cols = new List<Column.Description>(Elements.Count);
-        for (var i = 0; i < cols.Count; i++)
+        var len = Elements.Count;
+        var cols = new List<Column.Description>();
+        for (var i = 0; i < len; i++)
         {
-            cols[i] = Elements[i].Describe();
+            cols.Add(Elements[i].Describe());
         }
         return new Description { Name=Name, Columns=cols };
     }
@@ -42,7 +43,19 @@ class Table : DB.SQLElement
 class Column : Behavior
 {
     public string Name { get; set; }
-    public string Type { get; set; }
+
+    string _type = "TEXT";
+    public string Type
+    {
+        get
+        {
+            return _type;
+        }
+        set
+        {
+            _type = value.ToUpper();
+        }
+    }
 
     public Description Describe()
     {
