@@ -64,7 +64,10 @@ public class SQLQueryExpression : SimpleVarArgFunction
 
         public void DispatchQueryResult(QueryResult data)
         {
-            _listener.OnNewData(_func, data);
+            if (_listener!=null)
+            {
+                _listener.OnNewData(_func, data);
+            }
         }
 
         public override void Dispose()
