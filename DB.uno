@@ -66,11 +66,11 @@ class DB : Behavior
     void OnTable(Table table)
     {
         SQLiteInstance.RegisterTable(table.Describe());
-
     }
 
-    void OnQuery(Query table)
+    void OnQuery(Query query)
     {
+        SQLiteInstance.RegisterQuery(query.SQL);
     }
 
     void OnTableRemoved(Table table)

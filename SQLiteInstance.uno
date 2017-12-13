@@ -38,7 +38,7 @@ class SQLiteInstance
         }
     }
 
-    static public void RegisterQuery(string name, string sql)
+    static public void RegisterQuery(string sql)
     {
         lock (_sqliteGlobalLock)
         {
@@ -169,7 +169,6 @@ class SQLiteInstance
         }
     }
 
-
     class SQLThread
     {
         readonly ConcurrentQueue<Action<SQLiteDb>> _queue = new ConcurrentQueue<Action<SQLiteDb>>();
@@ -213,7 +212,32 @@ class SQLiteInstance
                     {
                         debug_log "{TODO} we just swallowed an error: " + e.Message;
                     }
+
+                    foreach (var query in _queries)
+                    {
+                        if (!_expressions.ContainsKey(query)) continue;
+
+                        var recipients = _expressions[query];
+                        if (recipients.Count == 0) continue;
+
+                        try
+                        {
+                            var res = new QueryResult(_db.Query(query, new string[0]));
+                            var i = 0;
+                            foreach (var recip in recipients)
+                            {
+                                debug_log "sending: " + res + " to " + recip + " (" + i + ")" ;
+                                recip.DispatchQueryResult(res);
+                                i++;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            debug_log "arsed: " + e.Message;
+                        }
+                    }
                 }
+                Thread.Sleep(2000);
             }
         }
 

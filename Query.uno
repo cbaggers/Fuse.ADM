@@ -11,4 +11,3 @@ class Query : DB.SQLElement
 {
     public string SQL { get; set; }
 }
-
