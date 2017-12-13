@@ -177,7 +177,7 @@ class SQLiteInstance
             if (sqlUpper.Contains("INSERT")) targetTokens.Add("INTO");
             if (sqlUpper.Contains("DELETE")) targetTokens.Add("FROM");
             var tablesModified = GetTablesFromQuery(_sql, targetTokens);
-
+            debug_log "0";
             foreach (var query in _queries.Keys)
             {
                 var cacheData = _queries[query];
@@ -190,6 +190,7 @@ class SQLiteInstance
                     }
                 }
             }
+            debug_log "1";
         }
     }
 
@@ -314,6 +315,23 @@ class SQLiteInstance
         }
     }
 
+    class OnUI
+    {
+        IQuerySubscription _target;
+        QueryResult _res;
+
+        public OnUI(IQuerySubscription target, QueryResult res)
+        {
+            _target = target;
+            _res = res;
+        }
+        public void Run()
+        {
+            debug_log "on ui sending: " + _res + " to " + _target;
+            _target.DispatchQueryResult(_res);
+        }
+    }
+
     class SQLThread
     {
         readonly ConcurrentQueue<Action<SQLiteDb>> _queue = new ConcurrentQueue<Action<SQLiteDb>>();
@@ -348,33 +366,43 @@ class SQLiteInstance
                 {
                     try
                     {
+                        debug_log "and..";
                         Action<SQLiteDb> action;
                         if (_queue.TryDequeue(out action))
                         {
                             action(_db);
                         }
+                        debug_log "horse";
                     }
                     catch (Exception e)
                     {
                         debug_log "{TODO} we just swallowed an error: " + e.Message;
                     }
+                    debug_log "oopdat toime";
 
                     foreach (var query in _queries.Keys)
                     {
+                        debug_log "t0";
                         var cacheData = _queries[query];
                         if (!cacheData.Dirty) continue;
-
+                        debug_log "t1 query="+query;
+                        if (!_expressions.ContainsKey(query)) continue;
                         var recipients = _expressions[query];
                         if (recipients.Count == 0) continue;
-
+                        debug_log "t2";
                         try
                         {
+                            debug_log "t3";
                             var i = 0;
                             foreach (var recip in recipients)
                             {
+                                debug_log "t4-" + i;
                                 var res = new QueryResult(_db.Query(query, recip.QueryParams));
-                                debug_log "sending: " + res + " to " + recip + " (" + i + ")" ;
-                                recip.DispatchQueryResult(res);
+                                debug_log "t5-" + i;
+                                debug_log "sending: " + res + " to ui for" + recip + " (" + i + ")" ;
+                                debug_log "t6-" + i;
+                                UpdateManager.PostAction(new OnUI(recip, res).Run);
+                                debug_log "t7-" + i;
                                 i++;
                             }
                         }
@@ -385,6 +413,7 @@ class SQLiteInstance
 
                         cacheData.Dirty = false;
                     }
+                    debug_log "testicles";
                 }
                 Thread.Sleep(10);
             }
