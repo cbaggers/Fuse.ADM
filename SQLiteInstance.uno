@@ -55,6 +55,7 @@ class SQLiteInstance
         {
             _queries[sql] = new QueryCacheItem(sql);
         }
+        _thread.Nudge();
     }
 
     static public void UnRegisterSelect(string sql)
@@ -66,6 +67,7 @@ class SQLiteInstance
                 _queries.Remove(sql);
             }
         }
+        _thread.Nudge();
     }
 
     static public void RegisterTable(Table.Description table)
@@ -96,6 +98,7 @@ class SQLiteInstance
                 exprs.Add(expr);
             }
         }
+        _thread.Nudge();
     }
 
     static public void UnRegisterQueryExpression(IQuerySubscription expr)
@@ -108,6 +111,7 @@ class SQLiteInstance
                 _expressions[key].Remove(expr);
             }
         }
+        _thread.Nudge();
     }
 
     public static void ExecuteMutating(string sql, List<string> queryParams=null)
@@ -323,6 +327,7 @@ class SQLiteInstance
     class SQLThread
     {
         readonly ConcurrentQueue<Action<SQLiteDb>> _queue = new ConcurrentQueue<Action<SQLiteDb>>();
+        readonly AutoResetEvent _hasTasks = new AutoResetEvent(true);
         Thread _thread;
         SQLiteDb _db;
 
@@ -346,6 +351,7 @@ class SQLiteInstance
             _db = SQLiteDb.Open(_dbFileName);
             while (true)
             {
+                var didSomething = false;
                 lock (_sqliteGlobalLock)
                 {
                     try
@@ -353,6 +359,7 @@ class SQLiteInstance
                         Action<SQLiteDb> action;
                         if (_queue.TryDequeue(out action))
                         {
+                            didSomething = true;
                             action(_db);
                         }
                     }
@@ -366,6 +373,7 @@ class SQLiteInstance
                         var cacheData = _queries[query];
                         if (!cacheData.Dirty) continue;
                         if (!_expressions.ContainsKey(query)) continue;
+                        didSomething = true;
                         var recipients = _expressions[query];
                         if (recipients.Count == 0) continue;
                         try
@@ -382,17 +390,25 @@ class SQLiteInstance
                         {
                             debug_log "{TODO} we just swallowed an error from a select: " + e.Message;
                         }
-
                         cacheData.Dirty = false;
                     }
                 }
-                Thread.Sleep(10);
+                if (!didSomething)
+                {
+                    _hasTasks.WaitOne();
+                }
             }
         }
 
         public void Invoke(Action<SQLiteDb> action)
         {
             _queue.Enqueue(action);
+            _hasTasks.Set();
+        }
+
+        public void Nudge()
+        {
+            _hasTasks.Set();
         }
     }
 }
