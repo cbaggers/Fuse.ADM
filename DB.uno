@@ -19,7 +19,6 @@ public class DB : Behavior
     protected override void OnRooted()
     {
         base.OnRooted();
-        debug_log "DB rooted";
         SQLiteInstance.Initialize(File);
         _elements.RootSubscribe(OnElementAdded, OnElementRemoved);
     }
@@ -41,7 +40,6 @@ public class DB : Behavior
 
     void OnElementAdded(SQLElement elem)
     {
-        debug_log "sup " + elem;
         if (elem is Table)
         {
             OnTable((Table)elem);

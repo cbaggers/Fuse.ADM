@@ -34,7 +34,6 @@ class SQLiteInstance
         {
             if (_thread!=null) return;
             _dbFileName = file;
-            debug_log "MakeInstance";
             _thread = new SQLThread();
         }
     }
@@ -71,13 +70,11 @@ class SQLiteInstance
 
     static public void RegisterTable(Table.Description table)
     {
-        debug_log "Got a table: " + table;
         _thread.Invoke(new CreateTable(table).Run);
     }
 
     static public void DeleteTable(Table.Description table)
     {
-        debug_log "deleting a table: " + table.Name;
         _thread.Invoke(new DropTable(table).Run);
     }
 
@@ -177,7 +174,6 @@ class SQLiteInstance
             if (sqlUpper.Contains("INSERT")) targetTokens.Add("INTO");
             if (sqlUpper.Contains("DELETE")) targetTokens.Add("FROM");
             var tablesModified = GetTablesFromQuery(_sql, targetTokens);
-            debug_log "0";
             foreach (var query in _queries.Keys)
             {
                 var cacheData = _queries[query];
@@ -190,7 +186,6 @@ class SQLiteInstance
                     }
                 }
             }
-            debug_log "1";
         }
     }
 
@@ -285,18 +280,12 @@ class SQLiteInstance
             // if info.Count>0 then there are column deletions
             if (remakeTable || info.Count>0)
             {
-                debug_log "remake table: " + _table.Name;
                 RemakeTable(db, unchangedColumns);
-            }
-            else
-            {
-                debug_log "No need to remake table: " + _table.Name;
             }
         }
 
         void AddColumn(SQLiteDb db, Column.Description col)
         {
-            debug_log "ADD COLUMN!";
             var query = "ALTER TABLE " + _table.Name + " ADD " + col.Name + " " + col.Type;
             db.Execute(query, new string[0]);
 
@@ -327,7 +316,6 @@ class SQLiteInstance
         }
         public void Run()
         {
-            debug_log "on ui sending: " + _res + " to " + _target;
             _target.DispatchQueryResult(_res);
         }
     }
@@ -355,65 +343,48 @@ class SQLiteInstance
 
         void SQLMainLoop()
         {
-            debug_log "in SQLMainLoop";
             _db = SQLiteDb.Open(_dbFileName);
-            debug_log "db open: " + _dbFileName;
-            debug_log "start the main sql loop";
-
             while (true)
             {
                 lock (_sqliteGlobalLock)
                 {
                     try
                     {
-                        debug_log "and..";
                         Action<SQLiteDb> action;
                         if (_queue.TryDequeue(out action))
                         {
                             action(_db);
                         }
-                        debug_log "horse";
                     }
                     catch (Exception e)
                     {
                         debug_log "{TODO} we just swallowed an error: " + e.Message;
                     }
-                    debug_log "oopdat toime";
 
                     foreach (var query in _queries.Keys)
                     {
-                        debug_log "t0";
                         var cacheData = _queries[query];
                         if (!cacheData.Dirty) continue;
-                        debug_log "t1 query="+query;
                         if (!_expressions.ContainsKey(query)) continue;
                         var recipients = _expressions[query];
                         if (recipients.Count == 0) continue;
-                        debug_log "t2";
                         try
                         {
-                            debug_log "t3";
                             var i = 0;
                             foreach (var recip in recipients)
                             {
-                                debug_log "t4-" + i;
                                 var res = new QueryResult(_db.Query(query, recip.QueryParams));
-                                debug_log "t5-" + i;
-                                debug_log "sending: " + res + " to ui for" + recip + " (" + i + ")" ;
-                                debug_log "t6-" + i;
                                 UpdateManager.PostAction(new OnUI(recip, res).Run);
-                                debug_log "t7-" + i;
                                 i++;
                             }
                         }
                         catch (Exception e)
                         {
-                            debug_log "arsed: " + e.Message;
+                            debug_log "{TODO} we just swallowed an error from a select: " + e.Message;
                         }
 
                         cacheData.Dirty = false;
                     }
-                    debug_log "testicles";
                 }
                 Thread.Sleep(10);
             }
