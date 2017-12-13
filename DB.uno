@@ -6,6 +6,7 @@ using Uno.Compiler.ExportTargetInterop;
 
 using Fuse;
 using Fuse.Reactive;
+using Fuse.Scripting;
 
 class DB : Behavior
 {
@@ -79,5 +80,51 @@ class DB : Behavior
 
     void OnSelectRemoved(Select table)
     {
+    }
+}
+
+[UXGlobalModule]
+class DBJS : NativeModule
+{
+    static readonly DBJS _instance;
+
+    public DBJS()
+    {
+        if(_instance != null) return;
+        Uno.UX.Resource.SetGlobalKey(_instance = this, "DB");
+
+        AddMember(new NativeFunction("insert", (NativeCallback)Insert));
+        AddMember(new NativeFunction("update", (NativeCallback)Update));
+        AddMember(new NativeFunction("delete", (NativeCallback)Delete));
+    }
+
+    public object Insert(Context c, object[] args)
+    {
+        Dispatch("INSERT", args);
+        return null;
+    }
+
+    public object Update(Context c, object[] args)
+    {
+        Dispatch("UPDATE", args);
+        return null;
+    }
+
+    public object Delete(Context c, object[] args)
+    {
+        Dispatch("DELETE", args);
+        return null;
+    }
+
+    void Dispatch(string kind, object[] args)
+    {
+        assert (args.Length>0);
+        var sql = kind + " " + (string)args[0];
+        var queryParams = new List<string>();
+        for (var i = 1; i<args.Length; i++)
+        {
+            queryParams.Add(Marshal.ToType<string>(args[i]));
+        }
+        SQLiteInstance.ExecuteMutating(sql, queryParams);
     }
 }

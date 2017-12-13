@@ -87,9 +87,15 @@ class SQLiteInstance
         _thread.Invoke(new MutatingExecute(sql, queryParams).Run);
     }
 
-    static List<string> GetTablesFromQuery(string sql)
+    static List<string> GetTablesFromQuery(string sql, List<string> targetTokens=null)
     {
         // hacky hack hack
+        if (targetTokens == null)
+        {
+            targetTokens = new List<string>();
+            targetTokens.Add("FROM");
+        }
+
         var res = new List<string>();
         var tokenIsTableName = false;
         foreach (var token in sql.Split())
@@ -99,7 +105,7 @@ class SQLiteInstance
                 res.Add(token);
                 tokenIsTableName = false;
             }
-            else if (token.ToUpper() == "FROM")
+            else if (targetTokens.Contains(token.ToUpper()))
             {
                 tokenIsTableName = true;
             }
@@ -121,7 +127,13 @@ class SQLiteInstance
         public void Run(SQLiteDb db)
         {
             db.Execute(_sql, _queryParams);
-            var tablesModified = GetTablesFromQuery(_sql);
+
+            var sqlUpper = _sql.ToUpper();
+            var targetTokens = new List<string>();
+            targetTokens.Add("UPDATE");
+            if (sqlUpper.Contains("INSERT")) targetTokens.Add("INTO");
+            if (sqlUpper.Contains("DELETE")) targetTokens.Add("FROM");
+            var tablesModified = GetTablesFromQuery(_sql, targetTokens);
 
             foreach (var query in _queries.Keys)
             {
