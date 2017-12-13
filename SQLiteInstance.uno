@@ -50,7 +50,7 @@ class SQLiteInstance
         }
     }
 
-    static public void RegisterQuery(string sql)
+    static public void RegisterSelect(string sql)
     {
         lock (_sqliteGlobalLock)
         {
@@ -64,7 +64,7 @@ class SQLiteInstance
         _thread.Invoke(new CreateTable(table).Run);
     }
 
-    static public void RegisterQueryExpression(Query query, SQLQueryExpression expr)
+    static public void RegisterQueryExpression(Select query, SQLQueryExpression expr)
     {
         lock (_sqliteGlobalLock)
         {

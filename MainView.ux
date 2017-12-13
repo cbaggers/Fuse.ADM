@@ -1,4 +1,5 @@
 <App>
+    <!-- todo: add idle signal to sql main loop -->
     <DB ux:Name="hoo" File="WOOOO">
         <Table Name="testTable">
             <Column Name="a" />
@@ -6,9 +7,8 @@
             <Column Name="c" />
             <Column Name="d" />
         </Table>
-        <!-- todo: rename Query node select -->
-        <Query ux:Name="getItems" SQL="SELECT * From testTable" />
-        <Query ux:Name="secondTest" SQL="SELECT * From testTable WHERE b=?" />
+        <Select ux:Name="getItems" SQL="* From testTable" />
+        <Select ux:Name="secondTest" SQL="* From testTable WHERE b=?" />
     </DB>
 
     <DockPanel>

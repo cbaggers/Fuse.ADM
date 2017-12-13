@@ -47,7 +47,7 @@ class DB : Behavior
         }
         else
         {
-            OnQuery((Query)elem);
+            OnSelect((Select)elem);
         }
     }
 
@@ -59,7 +59,7 @@ class DB : Behavior
         }
         else
         {
-            OnQueryRemoved((Query)elem);
+            OnSelectRemoved((Select)elem);
         }
     }
 
@@ -68,16 +68,16 @@ class DB : Behavior
         SQLiteInstance.RegisterTable(table.Describe());
     }
 
-    void OnQuery(Query query)
+    void OnSelect(Select query)
     {
-        SQLiteInstance.RegisterQuery(query.SQL);
+        SQLiteInstance.RegisterSelect(query.SQL);
     }
 
     void OnTableRemoved(Table table)
     {
     }
 
-    void OnQueryRemoved(Query table)
+    void OnSelectRemoved(Select table)
     {
     }
 }

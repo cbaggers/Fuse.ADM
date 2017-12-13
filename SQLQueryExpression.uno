@@ -31,7 +31,7 @@ public class SQLQueryExpression : SimpleVarArgFunction
             QueryParams = queryParams.ToArray();
         }
 
-        var queryElem = args[0].Value as Query;
+        var queryElem = args[0].Value as Select;
         if (queryElem!=null)
         {
             SQLiteInstance.RegisterQueryExpression(queryElem, this);
