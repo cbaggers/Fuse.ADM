@@ -4,7 +4,7 @@
             <Column Name="a" />
             <Column Name="b" />
             <Column Name="c" />
-            <Column Name="d" />
+            <!-- <Column Name="d" /> -->
         </Table>
 
         <!-- <Table Name="HeyHey"> -->
@@ -21,7 +21,7 @@
         var DB = require("DB");
 
         exports.boop = function() {
-            DB.insert("INTO testTable VALUES (10,'boogle',30,40)");
+            DB.insert("INTO testTable VALUES (10,'boogle',30)");
         };
 
         exports.woop = function() {
