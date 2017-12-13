@@ -6,19 +6,26 @@
             <Column Name="c" />
             <Column Name="d" />
         </Table>
+        <!-- todo: rename Query node select -->
         <Query ux:Name="getItems" SQL="SELECT * From testTable" />
         <Query ux:Name="secondTest" SQL="SELECT * From testTable WHERE b=?" />
     </DB>
+
     <DockPanel>
         <TopFrameBackground Dock="Top" />
         <StackPanel>
             <Button Text="Before" />
+
             <Each Items="query(getItems)">
-                <Button Text="OOOoo >{a}<" />
+                <Button Text="OOOoo >{a} : {b} : {c} : {d} <" />
             </Each>
+
+            <Button Text=".." />
+
             <Each Items="query(secondTest, 'boogle')">
                 <Button Text="params work :) >{a}<" />
             </Each>
+
             <Button Text="After" />
         </StackPanel>
         <BottomBarBackground Dock="Bottom" />

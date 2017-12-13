@@ -9,11 +9,23 @@ using Fuse.Reactive;
 
 class SQLiteInstance
 {
+    class QueryCacheItem
+    {
+        public bool Dirty;
+        public readonly List<string> Tables;
+
+        public QueryCacheItem(string sql)
+        {
+            Dirty = true;
+            Tables = GetTablesFromQuery(sql);
+        }
+    }
+
     static object _sqliteGlobalLock = new object();
     static SQLThread _thread;
     static string _dbFileName;
 
-    static List<string> _queries = new List<string>();
+    static Dictionary<string, QueryCacheItem> _queries = new Dictionary<string, QueryCacheItem>();
     static Dictionary<string, List<SQLQueryExpression>> _expressions = new Dictionary<string, List<SQLQueryExpression>>();
 
     static public void Initialize(string file)
@@ -42,10 +54,7 @@ class SQLiteInstance
     {
         lock (_sqliteGlobalLock)
         {
-            if (!_queries.Contains(sql))
-            {
-                _queries.Add(sql);
-            }
+            _queries[sql] = new QueryCacheItem(sql);
         }
     }
 
@@ -69,6 +78,62 @@ class SQLiteInstance
             if (!exprs.Contains(expr))
             {
                 exprs.Add(expr);
+            }
+        }
+    }
+
+    public static void ExecuteMutating(string sql, List<string> queryParams=null)
+    {
+        _thread.Invoke(new MutatingExecute(sql, queryParams).Run);
+    }
+
+    static List<string> GetTablesFromQuery(string sql)
+    {
+        // hacky hack hack
+        var res = new List<string>();
+        var tokenIsTableName = false;
+        foreach (var token in sql.Split())
+        {
+            if (tokenIsTableName)
+            {
+                res.Add(token);
+                tokenIsTableName = false;
+            }
+            else if (token.ToUpper() == "FROM")
+            {
+                tokenIsTableName = true;
+            }
+        }
+        return res;
+    }
+
+    class MutatingExecute
+    {
+        readonly string _sql;
+        readonly string[] _queryParams;
+
+        public MutatingExecute(string sql, List<string> queryParams)
+        {
+            _sql = sql;
+            _queryParams = queryParams!=null ? queryParams.ToArray() : new string[0];
+        }
+
+        public void Run(SQLiteDb db)
+        {
+            db.Execute(_sql, _queryParams);
+            var tablesModified = GetTablesFromQuery(_sql);
+
+            foreach (var query in _queries.Keys)
+            {
+                var cacheData = _queries[query];
+                foreach (var table in tablesModified)
+                {
+                    if (cacheData.Tables.Contains(table))
+                    {
+                        cacheData.Dirty = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -214,9 +279,11 @@ class SQLiteInstance
                         debug_log "{TODO} we just swallowed an error: " + e.Message;
                     }
 
-                    foreach (var query in _expressions.Keys)
+                    foreach (var query in _queries.Keys)
                     {
-                        if (!_queries.Contains(query)) continue;
+                        var cacheData = _queries[query];
+                        if (!cacheData.Dirty) continue;
+
                         var recipients = _expressions[query];
                         if (recipients.Count == 0) continue;
 
@@ -239,9 +306,11 @@ class SQLiteInstance
                         {
                             debug_log "arsed: " + e.Message;
                         }
+
+                        cacheData.Dirty = false;
                     }
                 }
-                Thread.Sleep(2000);
+                Thread.Sleep(10);
             }
         }
 
