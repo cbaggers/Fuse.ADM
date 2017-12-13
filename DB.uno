@@ -76,10 +76,13 @@ class DB : Behavior
 
     void OnTableRemoved(Table table)
     {
+        // this is a bad idea, happens too frequently
+        // SQLiteInstance.DeleteTable(table.Describe());
     }
 
-    void OnSelectRemoved(Select table)
+    void OnSelectRemoved(Select query)
     {
+        SQLiteInstance.UnRegisterSelect(query.SQL);
     }
 }
 

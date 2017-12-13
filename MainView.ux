@@ -1,5 +1,4 @@
 <App>
-    <!-- todo: add idle signal to sql main loop -->
     <DB ux:Name="hoo" File="WOOOO">
         <Table Name="testTable">
             <Column Name="a" />
@@ -25,7 +24,7 @@
             <Button Text="Before" />
 
             <Each Items="query(getItems)">
-                <Button Text="OOOoo >{a} : {b} : {c} : {d} <" />
+                <Button Text="OOOoo >{a} : {b} : {c}<" />
             </Each>
 
             <Button Text=".." />

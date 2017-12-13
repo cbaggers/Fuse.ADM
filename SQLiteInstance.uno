@@ -58,10 +58,27 @@ class SQLiteInstance
         }
     }
 
+    static public void UnRegisterSelect(string sql)
+    {
+        lock (_sqliteGlobalLock)
+        {
+            if (_queries.ContainsKey(sql))
+            {
+                _queries.Remove(sql);
+            }
+        }
+    }
+
     static public void RegisterTable(Table.Description table)
     {
         debug_log "Got a table: " + table;
         _thread.Invoke(new CreateTable(table).Run);
+    }
+
+    static public void DeleteTable(Table.Description table)
+    {
+        debug_log "deleting a table: " + table.Name;
+        _thread.Invoke(new DropTable(table).Run);
     }
 
     static public void RegisterQueryExpression(Select query, SQLQueryExpression expr)
@@ -113,6 +130,18 @@ class SQLiteInstance
         return res;
     }
 
+    static void MarkTableDirty(SQLiteDb db, Table.Description table)
+    {
+        foreach (var query in _queries.Keys)
+        {
+            var cacheData = _queries[query];
+            if (cacheData.Tables.Contains(table.Name))
+            {
+                cacheData.Dirty = true;
+            }
+        }
+    }
+
     class MutatingExecute
     {
         readonly string _sql;
@@ -150,6 +179,21 @@ class SQLiteInstance
         }
     }
 
+    class DropTable
+    {
+        Table.Description _table;
+
+        public DropTable(Table.Description table)
+        {
+            _table = table;
+        }
+
+        public void Run(SQLiteDb db)
+        {
+            db.Execute("DROP TABLE IF EXISTS " + _table.Name, new string[0]);
+        }
+    }
+
     class CreateTable
     {
         Table.Description _table;
@@ -170,6 +214,7 @@ class SQLiteInstance
             {
                 Create(db);
             }
+            MarkTableDirty(db, _table);
         }
 
         Dictionary<string, string> TableInfo(SQLiteDb db)
@@ -197,21 +242,21 @@ class SQLiteInstance
 
         void Alter(SQLiteDb db, Dictionary<string, string> info)
         {
-            // search for additions and modifications
-            // remove what we have handled
+            var currentColumnNames = info.Keys.ToArray();
+            var unchangedColumns = new List<string>();
+            var remakeTable = false;
+
             foreach (var col in _table.Columns)
             {
                 if (info.ContainsKey(col.Name))
                 {
                     if (info[col.Name] != col.Type)
                     {
-                        debug_log "col Name=" + col.Name + " Type=" + col.Type;
-                        debug_log "info Name=" + col.Name + " Type=" + info[col.Name];
-                        ModifyColumn(db);
+                        remakeTable = true;
                     }
                     else
                     {
-                        debug_log "Skipped Col";
+                        unchangedColumns.Add(col.Name);
                     }
                     info.Remove(col.Name);
                 }
@@ -219,12 +264,18 @@ class SQLiteInstance
                 {
                     AddColumn(db, col);
                 }
-                // cols.Add("`" + col.Name + "` TEXT");
             }
-            // whatever remains are removals
-            foreach (var col in info)
+
+            // if remakeTable is true then there were column modifications
+            // if info.Count>0 then there are column deletions
+            if (remakeTable || info.Count>0)
             {
-                RemoveColumn(db); //col["name"]);
+                debug_log "remake table: " + _table.Name;
+                RemakeTable(db, unchangedColumns);
+            }
+            else
+            {
+                debug_log "No need to remake table: " + _table.Name;
             }
         }
 
@@ -236,13 +287,16 @@ class SQLiteInstance
 
         }
 
-        void RemoveColumn(SQLiteDb db)
+        void RemakeTable(SQLiteDb db, List<string> unchangedColumns)
         {
-            debug_log "TODO: RemoveColumn";
-        }
-        void ModifyColumn(SQLiteDb db)
-        {
-            debug_log "TODO: ModifyColumn";
+            var qp = new string[0];
+            var tmpTableName = _table.Name + "_old";
+            var columnsToCopy = string.Join(",", unchangedColumns.ToArray());
+
+            db.Execute("ALTER TABLE " + _table.Name + " RENAME TO " + tmpTableName, qp);
+            Create(db);
+            db.Execute("INSERT INTO " + _table.Name + "(" + columnsToCopy + ") SELECT " + columnsToCopy + " FROM " + tmpTableName, qp);
+            db.Execute("DROP TABLE " + tmpTableName, qp);
         }
     }
 
