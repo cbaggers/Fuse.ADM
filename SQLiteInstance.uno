@@ -26,7 +26,7 @@ class SQLiteInstance
     static string _dbFileName;
 
     static Dictionary<string, QueryCacheItem> _queries = new Dictionary<string, QueryCacheItem>();
-    static Dictionary<string, List<SQLQueryExpression>> _expressions = new Dictionary<string, List<SQLQueryExpression>>();
+    static Dictionary<string, List<IQuerySubscription>> _expressions = new Dictionary<string, List<IQuerySubscription>>();
 
     static public void Initialize(string file)
     {
@@ -81,20 +81,34 @@ class SQLiteInstance
         _thread.Invoke(new DropTable(table).Run);
     }
 
-    static public void RegisterQueryExpression(Select query, SQLQueryExpression expr)
+    static public void RegisterQueryExpression(IQuerySubscription expr)
     {
         lock (_sqliteGlobalLock)
         {
-            var queryID = query.SQL;
+            var queryID = expr.Query.SQL;
+            assert queryID != null;
+
             if (!_expressions.ContainsKey(queryID))
             {
-                _expressions[queryID] = new List<SQLQueryExpression>();
+                _expressions[queryID] = new List<IQuerySubscription>();
             }
 
             var exprs = _expressions[queryID];
             if (!exprs.Contains(expr))
             {
                 exprs.Add(expr);
+            }
+        }
+    }
+
+    static public void UnRegisterQueryExpression(IQuerySubscription expr)
+    {
+        lock (_sqliteGlobalLock)
+        {
+            // so over the top, should better datastructures
+            foreach (var key in _expressions.Keys)
+            {
+                _expressions[key].Remove(expr);
             }
         }
     }
@@ -358,11 +372,7 @@ class SQLiteInstance
                             var i = 0;
                             foreach (var recip in recipients)
                             {
-                                QueryResult res = QueryResult.NULL;
-                                lock (recip.ParamLock)
-                                {
-                                    res = new QueryResult(_db.Query(query, recip.QueryParams));
-                                }
+                                var res = new QueryResult(_db.Query(query, recip.QueryParams));
                                 debug_log "sending: " + res + " to " + recip + " (" + i + ")" ;
                                 recip.DispatchQueryResult(res);
                                 i++;

@@ -8,19 +8,50 @@ using Uno.Compiler.ExportTargetInterop;
 using Fuse;
 using Fuse.Reactive;
 
+// fucking hate this, howeve VarArgFunction.Subscription is protected..gah
+public interface IQuerySubscription : IDisposable
+{
+    Select Query { get; }
+    string[] QueryParams { get; }
+    void DispatchQueryResult(QueryResult data);
+}
+
 [UXFunction("query")]
 public class SQLQueryExpression : SimpleVarArgFunction
 {
-    IListener _listener;
-    public readonly object ParamLock = new object();
-    public string[] QueryParams = new string[0];
-
-    protected override void OnNewArguments(Argument[] args, IListener listener)
+    public override IDisposable Subscribe(IContext context, IListener listener)
     {
-        lock (ParamLock)
-        {
-            var queryParams = new List<string>();
+        return new QuerySubscription(this, context, listener);
+    }
 
+    sealed class QuerySubscription: Subscription, IQuerySubscription
+    {
+        public string[] QueryParams { get; private set; }
+        public Select Query { get; private set; }
+
+        IListener _listener;
+        SimpleVarArgFunction _func;
+
+        public QuerySubscription(SimpleVarArgFunction func, IContext context, IListener listener)
+            : base(func, context)
+        {
+            QueryParams = new string[0];
+            _func = func;
+            _listener = listener;
+            Init();
+        }
+
+        protected override void OnNewArguments(Argument[] args)
+        {
+            SQLiteInstance.UnRegisterQueryExpression(this);
+
+            Query = args[0].Value as Select;
+            if (Query!=null)
+            {
+                SQLiteInstance.RegisterQueryExpression(this);
+            }
+
+            var queryParams = new List<string>();
             if (args.Length > 1)
             {
                 for (var i = 1; i<args.Length; i++)
@@ -31,17 +62,17 @@ public class SQLQueryExpression : SimpleVarArgFunction
             QueryParams = queryParams.ToArray();
         }
 
-        var queryElem = args[0].Value as Select;
-        if (queryElem!=null)
+        public void DispatchQueryResult(QueryResult data)
         {
-            SQLiteInstance.RegisterQueryExpression(queryElem, this);
+            _listener.OnNewData(_func, data);
         }
 
-        _listener = listener;
-    }
-
-    public void DispatchQueryResult(QueryResult data)
-    {
-        _listener.OnNewData(this, data);
+        public override void Dispose()
+        {
+            _listener = null;
+            _func = null;
+            SQLiteInstance.UnRegisterQueryExpression(this);
+            base.Dispose();
+        }
     }
 }

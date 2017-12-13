@@ -8,7 +8,7 @@ using Fuse;
 using Fuse.Reactive;
 using Fuse.Scripting;
 
-class DB : Behavior
+public class DB : Behavior
 {
     public abstract class SQLElement {}
 
