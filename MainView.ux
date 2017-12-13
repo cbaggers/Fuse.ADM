@@ -21,7 +21,7 @@
         var DB = require("DB");
 
         exports.boop = function() {
-            DB.insert("INTO testTable VALUES (10,'boogle',30)");
+            DB.insert("INTO testTable VALUES (10,20,30)");
         };
 
         exports.woop = function() {

@@ -28,7 +28,7 @@ class SQLiteInstance
     static Dictionary<string, QueryCacheItem> _queries = new Dictionary<string, QueryCacheItem>();
     static Dictionary<string, List<IQuerySubscription>> _expressions = new Dictionary<string, List<IQuerySubscription>>();
 
-    static public void Initialize(string file)
+    public static void Initialize(string file)
     {
         lock (_sqliteGlobalLock)
         {
@@ -49,69 +49,74 @@ class SQLiteInstance
         }
     }
 
-    static public void RegisterSelect(string sql)
+    public static void RegisterSelect(string sql)
     {
-        lock (_sqliteGlobalLock)
-        {
-            _queries[sql] = new QueryCacheItem(sql);
-        }
-        _thread.Nudge();
+        _thread.Invoke(RegisterSelectInner, sql);
     }
 
-    static public void UnRegisterSelect(string sql)
+    static void RegisterSelectInner(SQLiteDb db, string sql)
     {
-        lock (_sqliteGlobalLock)
-        {
-            if (_queries.ContainsKey(sql))
-            {
-                _queries.Remove(sql);
-            }
-        }
-        _thread.Nudge();
+        _queries[sql] = new QueryCacheItem(sql);
     }
 
-    static public void RegisterTable(Table.Description table)
+    public static void UnRegisterSelect(string sql)
+    {
+        _thread.Invoke(UnRegisterSelectInner, sql);
+    }
+
+    static void UnRegisterSelectInner(SQLiteDb db, string sql)
+    {
+
+        if (_queries.ContainsKey(sql))
+        {
+            _queries.Remove(sql);
+        }
+    }
+
+    public static void RegisterTable(Table.Description table)
     {
         _thread.Invoke(new CreateTable(table).Run);
     }
 
-    static public void DeleteTable(Table.Description table)
+    public static void DeleteTable(Table.Description table)
     {
         _thread.Invoke(new DropTable(table).Run);
     }
 
-    static public void RegisterQueryExpression(IQuerySubscription expr)
+    public static void RegisterQueryExpression(IQuerySubscription expr)
     {
-        lock (_sqliteGlobalLock)
-        {
-            var queryID = expr.Query.SQL;
-            assert queryID != null;
-
-            if (!_expressions.ContainsKey(queryID))
-            {
-                _expressions[queryID] = new List<IQuerySubscription>();
-            }
-
-            var exprs = _expressions[queryID];
-            if (!exprs.Contains(expr))
-            {
-                exprs.Add(expr);
-            }
-        }
-        _thread.Nudge();
+        _thread.Invoke(RegisterQueryExpressionInner, expr);
     }
 
-    static public void UnRegisterQueryExpression(IQuerySubscription expr)
+    static void RegisterQueryExpressionInner(SQLiteDb db, IQuerySubscription expr)
     {
-        lock (_sqliteGlobalLock)
+        var queryID = expr.Query.SQL;
+        assert queryID != null;
+
+        if (!_expressions.ContainsKey(queryID))
         {
-            // so over the top, should better datastructures
-            foreach (var key in _expressions.Keys)
-            {
-                _expressions[key].Remove(expr);
-            }
+            _expressions[queryID] = new List<IQuerySubscription>();
         }
-        _thread.Nudge();
+
+        var exprs = _expressions[queryID];
+        if (!exprs.Contains(expr))
+        {
+            exprs.Add(expr);
+        }
+    }
+
+    public static void UnRegisterQueryExpression(IQuerySubscription expr)
+    {
+        _thread.Invoke(UnRegisterQueryExpressionInner, expr);
+    }
+
+    static void UnRegisterQueryExpressionInner(SQLiteDb db, IQuerySubscription expr)
+    {
+        // so over the top, should better datastructures
+        foreach (var key in _expressions.Keys)
+        {
+            _expressions[key].Remove(expr);
+        }
     }
 
     public static void ExecuteMutating(string sql, List<string> queryParams=null)
@@ -406,9 +411,26 @@ class SQLiteInstance
             _hasTasks.Set();
         }
 
-        public void Nudge()
+        public void Invoke<T>(Action<SQLiteDb, T> action, T item)
         {
-            _hasTasks.Set();
+            Invoke(new ClosureOneArg<T>(action, item).Run);
+        }
+
+        class ClosureOneArg<T>
+        {
+            Action<SQLiteDb, T> _action;
+            T _item;
+
+            public ClosureOneArg(Action<SQLiteDb, T> action, T item)
+            {
+                _action = action;
+                _item = item;
+            }
+
+            public void Run(SQLiteDb db)
+            {
+                _action(db, _item);
+            }
         }
     }
 }
