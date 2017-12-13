@@ -52,19 +52,60 @@ public class QueryResult: IArray
         return sb.ToString();
     }
 
+    public QueryResult Cast(Dictionary<string, Func<string,object>> casts)
+    {
+        var castLen = casts.Count;
+        var newRows = new List<QueryResultRow>();
+        var i = 0;
+        foreach (var row in _items)
+        {
+            newRows.Add(row.Cast(casts));
+        }
+        return new QueryResult(newRows);
+    }
+
     public static readonly QueryResult NULL = new QueryResult();
 }
 
 public class QueryResultRow : IObject
 {
-    Dictionary<string, string> _data;
+    Dictionary<string, object> _data;
+
+    public QueryResultRow(Dictionary<string, object> data)
+    {
+        _data = data;
+    }
 
     public QueryResultRow(Dictionary<string, string> data)
     {
-        _data = data;
+        var newVals = new Dictionary<string, object>();
+        foreach (var key in data.Keys)
+        {
+            newVals[key] = data[key];
+        }
+        _data = newVals;
     }
 
     bool IObject.ContainsKey(string key) { return _data.ContainsKey(key); }
     object IObject.this[string key] { get { return _data[key]; } }
     string[] IObject.Keys { get { return _data.Keys.ToArray(); } }
+
+    public QueryResultRow Cast(Dictionary<string, Func<string,object>> casts)
+    {
+        var newVals = new Dictionary<string, object>();
+
+        foreach (var key in _data.Keys)
+        {
+            var val = _data[key];
+            if (val is string && casts.ContainsKey(key))
+            {
+                newVals[key] = casts[key]((string)val);
+            }
+            else
+            {
+                newVals[key] = val;
+            }
+        }
+        return new QueryResultRow(newVals);
+    }
 }

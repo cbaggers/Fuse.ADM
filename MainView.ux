@@ -12,7 +12,8 @@
         <!--     <Column Name="bar" /> -->
         <!-- </Table> -->
 
-        <Select ux:Name="getItems" SQL="* From testTable" />
+        <Select ux:Name="getItems" SQL="* From testTable"
+                As="a:int, c:int"/>
         <Select ux:Name="secondTest" SQL="* From testTable WHERE b=?" />
         <!-- <Select ux:Name="getHeyHey" SQL="* From HeyHey" /> -->
     </DB>
@@ -35,7 +36,7 @@
             <StackPanel>
                 <Text Value = "All from first table" />
                 <Each Items="query(getItems)">
-                    <Button Text="OOOoo >a: {a} b:{b} c:{c}<" />
+                    <Button Text="OOOoo >a: {a + 1} b:{b} c:{c}<" />
                 </Each>
 
                 <Text Value = "Filtered first table" />

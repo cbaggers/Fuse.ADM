@@ -383,12 +383,11 @@ class SQLiteInstance
                         if (recipients.Count == 0) continue;
                         try
                         {
-                            var i = 0;
                             foreach (var recip in recipients)
                             {
                                 var res = new QueryResult(_db.Query(query, recip.QueryParams));
+                                res = res.Cast(recip.Query.Casts);
                                 UpdateManager.PostAction(new OnUI(recip, res).Run);
-                                i++;
                             }
                         }
                         catch (Exception e)
