@@ -7,7 +7,7 @@ using Uno.Compiler.ExportTargetInterop;
 using Fuse;
 using Fuse.Reactive;
 
-class Table : DB.SQLElement
+class Table : ADM.SQLElement
 {
     public string Name { get; set; }
 

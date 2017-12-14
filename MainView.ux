@@ -1,5 +1,5 @@
 <App>
-    <DB ux:Name="hoo" File="WOOOO">
+    <ADM ux:Name="hoo" File="WOOOO">
         <Table Name="testTable">
             <Column Name="a" />
             <Column Name="b" />
@@ -16,17 +16,17 @@
                 As="a:int, c:int"/>
         <Select ux:Name="secondTest" SQL="* From testTable WHERE b=?" />
         <!-- <Select ux:Name="getHeyHey" SQL="* From HeyHey" /> -->
-    </DB>
+    </ADM>
 
     <JavaScript>
-        var DB = require("DB");
+        var ADM = require("ADM");
 
         exports.boop = function() {
-            DB.insert("INTO testTable VALUES (10,20,30)");
+            ADM.insert("INTO testTable VALUES (10,20,30)");
         };
 
         exports.woop = function() {
-            DB.insert("INTO HeyHey VALUES ('woo', 'haaa')");
+            ADM.insert("INTO HeyHey VALUES ('woo', 'haaa')");
         };
     </JavaScript>
 

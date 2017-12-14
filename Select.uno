@@ -7,7 +7,7 @@ using Uno.Compiler.ExportTargetInterop;
 using Fuse;
 using Fuse.Reactive;
 
-public class Select : DB.SQLElement
+public class Select : ADM.SQLElement
 {
     string _sql;
     public string SQL

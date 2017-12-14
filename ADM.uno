@@ -8,7 +8,7 @@ using Fuse;
 using Fuse.Reactive;
 using Fuse.Scripting;
 
-public class DB : Behavior
+public class ADM : Behavior
 {
     public abstract class SQLElement {}
 
@@ -85,14 +85,14 @@ public class DB : Behavior
 }
 
 [UXGlobalModule]
-class DBJS : NativeModule
+class ADMJS : NativeModule
 {
-    static readonly DBJS _instance;
+    static readonly ADMJS _instance;
 
-    public DBJS()
+    public ADMJS()
     {
         if(_instance != null) return;
-        Uno.UX.Resource.SetGlobalKey(_instance = this, "DB");
+        Uno.UX.Resource.SetGlobalKey(_instance = this, "ADM");
 
         AddMember(new NativeFunction("insert", (NativeCallback)Insert));
         AddMember(new NativeFunction("update", (NativeCallback)Update));
